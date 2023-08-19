@@ -155,7 +155,6 @@ def model(cv_split, x, y):
 def HistGradient(trial):
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.metrics import mean_squared_error
-    from sklearn.metrics import r2_score
     import numpy as np
 
     params = {
@@ -187,7 +186,6 @@ def HistGradient(trial):
 def CatBoost(trial):
     from catboost import CatBoostRegressor
     from sklearn.metrics import mean_squared_error
-    from sklearn.metrics import r2_score
     import numpy as np
 
     params = {
@@ -249,13 +247,13 @@ def StackingRegressor(best_params_hist, best_params_cat):
             mean_r2 = np.mean(r2_scores)
             print(f"MSE:{mean_score:.2f} +/- {fold_std:.2f}")
             print(f"r2:{mean_r2:.2f}")
-    from sklearn.externals import joblib
+    import joblib
 
     joblib.dump(model_final, "model_final.pkl")
 
 
 def model_test(test_set):
-    from sklearn.externals import joblib
+    import joblib
 
     load_model = joblib.load("model_final.pkl")
     x_test = test_set.drop(["Salary in USD"], axis=1)
@@ -338,17 +336,17 @@ if __name__ == "__main__":
 
     print("=" * 50)
     # CatBoostRegressor
-    study = optuna.create_study(direction="minimize")
-    study.optimize(CatBoost, n_trials=100, show_progress_bar=True)
+    study2 = optuna.create_study(direction="minimize")
+    study2.optimize(CatBoost, n_trials=100, show_progress_bar=True)
     print(f"\nCatBoost Regressor:\n")
-    print("Number of finished trials: ", len(study.trials))
+    print("Number of finished trials: ", len(study2.trials))
     print("Best trial:")
-    trial = study.best_trial
+    trial = study2.best_trial
     print("Best RMSE score : ", trial.value)
     print("Params: ")
     for key, value in trial.params.items():
         print(f"{key}: {value}")
 
-    best_params_cat = study.best_params
+    best_params_cat = study2.best_params
     StackingRegressor(best_params_hist, best_params_cat)
     model_test(test_set)
