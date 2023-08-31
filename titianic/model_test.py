@@ -27,11 +27,7 @@ y = df_ans.Survived.values
 
 y_pred = model.predict(X)
 
-mse = mean_squared_error(y, y_pred)
-r2 = r2_score(y, y_pred)
 accuracy = accuracy_score(y, y_pred)
-print(f"MSE = {mse:.2f}")
-print(f"r2 score = {r2:.2f}")
 print(f"Accuracy score = {accuracy:.2f}")
 
 # 混淆矩陣

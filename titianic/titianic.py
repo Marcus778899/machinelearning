@@ -45,7 +45,8 @@ def EDA(df_train):
 
     # 票價與存活的關聯
     plt.rcParams["font.family"] = "SimSun"
-    ax = sns.kdeplot(df_train.Fare[(df_train["Survived"] == 1)], color="Red", fill=True)
+    ax = sns.kdeplot(
+        df_train.Fare[(df_train["Survived"] == 1)], color="Red", fill=True)
     ax = sns.kdeplot(
         df_train.Fare[(df_train["Survived"] == 0)], ax=ax, color="Blue", fill=True
     )
@@ -56,7 +57,8 @@ def EDA(df_train):
     plt.show()
 
     # 年紀與存活關聯
-    ax = sns.kdeplot(df_train.Age[(df_train["Survived"] == 1)], color="Red", fill=True)
+    ax = sns.kdeplot(
+        df_train.Age[(df_train["Survived"] == 1)], color="Red", fill=True)
     ax = sns.kdeplot(
         df_train.Age[(df_train["Survived"] == 0)], ax=ax, color="Blue", fill=True
     )
@@ -101,11 +103,7 @@ def model(X, y):
         print(f"\n{name} Regressor:")
         classifer.fit(X_train, y_train)
         pred = classifer.predict(X_test)
-        mse = mean_squared_error(y_test, pred)
-        r2 = r2_score(y_test, pred)
         accuracy = accuracy_score(y_test, pred)
-        print(f"MSE = {mse:.2f}")
-        print(f"r2 score = {r2:.2f}")
         print(f"Accuracy score = {accuracy:.2f}")
     return X_train, X_test, y_train, y_test
 
