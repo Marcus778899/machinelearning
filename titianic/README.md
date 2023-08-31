@@ -43,16 +43,16 @@
 - XGBClassifier Regressor:
   Accuracy score = 0.83
 ## 最後選用隨機森林RandomForest，其最佳參數如下
-Best parameters: {'max_depth': 15, 'max_leaf_nodes': 30, 'n_estimators': 100}
-Best cross-validation score: 0.8228593872741555
-Accuracy score = 0.86
+- Best parameters: {'max_depth': 15, 'max_leaf_nodes': 30, 'n_estimators': 100}
+- Best cross-validation score: 0.8228593872741555
+- Accuracy score = 0.86
 
 # 模型測試
-Accuracy score = 0.91
+**<span style="color:red">Accuracy score = 0.91</span>**
 
 ## 繪製出confusion_matrix可得到下列評估量
-Accuracy: 0.9114832535885168
-Precision: 0.9236641221374046
-Recall: 0.8175675675675675
-Specificity: 0.9629629629629629
-F1-score: 0.8673835125448027
+- Accuracy: 0.9114832535885168
+- Precision: 0.9236641221374046
+- Recall: 0.8175675675675675
+- Specificity: 0.9629629629629629
+- F1-score: 0.8673835125448027
