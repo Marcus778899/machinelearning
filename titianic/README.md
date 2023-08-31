@@ -24,6 +24,9 @@
 
 12. **Embarked**: 登船港口，表示乘客登船的地點，可能是 "C"（Cherbourg）、"Q"（Queenstown）或 "S"（Southampton）。
 
+# 分析目的
+目標是要探討存活的可能性
+
 # 各模型效能
 - LogisticRegression Regressor:
   Accuracy score = 0.82
@@ -48,7 +51,7 @@
 - Accuracy score = 0.86
 
 # 模型測試
-**<span style="color:red">Accuracy score = 0.91</span>**
+**Accuracy score = 0.91**
 
 ## 繪製出confusion_matrix可得到下列評估量
 - Accuracy: 0.9114832535885168
