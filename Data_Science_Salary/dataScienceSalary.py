@@ -1,6 +1,36 @@
-def load_data():
-    import pandas as pd
+import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+from sklearn.preprocessing import OrdinalEncoder, OneHotEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import (
+    RandomForestRegressor,
+    GradientBoostingRegressor,
+    AdaBoostRegressor,
+    HistGradientBoostingRegressor,
+)
+from catboost import CatBoostRegressor
+from xgboost import XGBRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import optuna
+from sklearn.ensemble import StackingRegressor
+import joblib
+import plotly.graph_objects as go
+import warnings
 
+warnings.filterwarnings("ignore")
+try:
+    from IPython import get_ipython
+
+    get_ipython().magic("clear")
+    get_ipython().magic("reset -f")
+except:
+    pass
+
+
+def load_data():
     df = pd.read_csv("./Data_Science_Salary/Latest_Data_Science_Salaries .csv")
     print(df.info())
     print("-" * 50)
@@ -17,14 +47,14 @@ def EDA(df):
     experience_salary = (
         df.groupby("Experience Level")["Salary in USD"].mean().reset_index()
     )
-    print(df.groupby("Experience Level")["Salary in USD"].describe().astype(int))
+    print(df.groupby("Experience Level")[
+          "Salary in USD"].describe().astype(int))
     print("=" * 100)
     print("遺失值")
     print(df.isnull().sum())
     print("=" * 50)
     print("工作經驗薪水級距")
     print(experience_salary)
-    from matplotlib import pyplot as plt
 
     # 職稱與薪水的柱狀圖
     plt.figure(figsize=(20, 10))
@@ -40,7 +70,8 @@ def EDA(df):
     plt.show()
 
     # 經驗與薪水的柱狀圖
-    plt.bar(experience_salary["Experience Level"], experience_salary["Salary in USD"])
+    plt.bar(experience_salary["Experience Level"],
+            experience_salary["Salary in USD"])
     plt.xlabel("Experience Level")
     plt.ylabel("Salary in USD")
     plt.title("Experience Level and Salary")
@@ -69,32 +100,35 @@ def EDA(df):
     print(f"專業技術{df['Expertise Level'].value_counts()}")
 
 
-def label_code(df):
-    from sklearn.preprocessing import OrdinalEncoder
-    import pandas as pd
-
-    df_ = df.drop(["Employee Residence", "Salary"], axis=1)
-
-    # 等級尺度標籤
+def label(df):
     oe = OrdinalEncoder()
+    ohe = OneHotEncoder()
+
     col_oe = ["Experience Level", "Expertise Level", "Company Size"]
-    oe_df = pd.DataFrame(
-        oe.fit_transform(df_[col_oe]), columns=oe.get_feature_names_out(col_oe)
+    col_ohe = ["Job Title", "Employment Type",
+               "Salary Currency", "Company Location"]
+
+    preprocessor = ColumnTransformer(
+        transformers=[("ordinal", oe, col_oe), ("one_hot", ohe, col_ohe)],
+        remainder="passthrough",
     )
-    # OneHotEncoding
-    col_ohe = ["Job Title", "Employment Type", "Salary Currency", "Company Location"]
-    ohe_df = pd.get_dummies(df_[col_ohe], columns=col_ohe, prefix=col_ohe)
-    df_ = pd.concat([df_.drop(col_ohe + col_oe, axis=1), oe_df, ohe_df], axis=1)
 
-    # 先進行切分，test_set最後用來進行測試
-    from sklearn.model_selection import train_test_split
+    transform = preprocessor.fit_transform(df[col_oe + col_ohe])
+    encode_data = pd.DataFrame(
+        transform.toarray(),
+        columns=preprocessor.get_feature_names_out(col_oe + col_ohe),
+    )
+    joblib.dump(preprocessor, "./Data_Science_Salary/label.pkl")
 
-    train_set, test_set = train_test_split(df_, test_size=0.2, random_state=123)
+    df_ = pd.concat([df[["Year", "Salary in USD"]], encode_data], axis=1)
+    print(df_)
+
+    train_set, test_set = train_test_split(
+        df_, test_size=0.2, random_state=123)
     x = train_set.drop("Salary in USD", axis=1)
     y = train_set["Salary in USD"]
 
     # 5折交叉驗證
-    from sklearn.model_selection import KFold
 
     cv = KFold(n_splits=5, shuffle=True, random_state=123)
     cv_split = list(cv.split(x, y))
@@ -103,15 +137,6 @@ def label_code(df):
 
 def model(cv_split, x, y):
     # 未調整超參前，挑選適合模型
-    from sklearn.ensemble import (
-        RandomForestRegressor,
-        GradientBoostingRegressor,
-        AdaBoostRegressor,
-        HistGradientBoostingRegressor,
-    )
-    from catboost import CatBoostRegressor
-    from xgboost import XGBRegressor
-
     regressors = [
         ("CatBoost", CatBoostRegressor(random_state=123, verbose=False)),
         ("XGboost", XGBRegressor(random_state=123)),
@@ -123,8 +148,6 @@ def model(cv_split, x, y):
         ("Random Forest", RandomForestRegressor(random_state=123)),
         ("Gradient Boosting", GradientBoostingRegressor(random_state=123)),
     ]
-    from sklearn.metrics import mean_squared_error, r2_score
-    import numpy as np
 
     for name, clf in regressors:
         MSE = []
@@ -152,11 +175,7 @@ def model(cv_split, x, y):
             print("==" * 50)
 
 
-def HistGradient(trial):
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from sklearn.metrics import mean_squared_error
-    import numpy as np
-
+def histGradient(trial):
     params = {
         "loss": trial.suggest_categorical(
             "loss", ["absolute_error", "poisson", "squared_error"]
@@ -183,11 +202,7 @@ def HistGradient(trial):
     return np.mean(rmse_score_hist)
 
 
-def CatBoost(trial):
-    from catboost import CatBoostRegressor
-    from sklearn.metrics import mean_squared_error
-    import numpy as np
-
+def catBoost(trial):
     params = {
         "loss_function": trial.suggest_categorical(
             "loss_function", ["MAE", "RMSE", "Poisson"]
@@ -213,20 +228,15 @@ def CatBoost(trial):
     return np.mean(rmse_score_cat)
 
 
-def StackingRegressor(best_params_hist, best_params_cat):
-    from sklearn.ensemble import StackingRegressor
-    from sklearn.ensemble import HistGradientBoostingRegressor
-    from catboost import CatBoostRegressor
-    from sklearn.metrics import mean_squared_error
-    from sklearn.metrics import r2_score
-    import numpy as np
-
+def stackingRegressor(best_params_hist, best_params_cat):
     estimators = [
         (
             "HistGradientBoostingRegressor",
-            HistGradientBoostingRegressor(random_state=123, **best_params_hist),
+            HistGradientBoostingRegressor(
+                random_state=123, **best_params_hist),
         ),
-        ("CatBoostRegressor", CatBoostRegressor(random_state=123, **best_params_cat)),
+        ("CatBoostRegressor", CatBoostRegressor(
+            random_state=123, **best_params_cat)),
     ]
     model_final = StackingRegressor(estimators=estimators, n_jobs=5)
     scores = []
@@ -247,27 +257,19 @@ def StackingRegressor(best_params_hist, best_params_cat):
             mean_r2 = np.mean(r2_scores)
             print(f"MSE:{mean_score:.2f} +/- {fold_std:.2f}")
             print(f"r2:{mean_r2:.2f}")
-    import joblib
 
-    joblib.dump(model_final, "model_final.pkl")
+    joblib.dump(model_final, "./Data_Science_Salary/model_final.pkl")
 
 
 def model_test(test_set):
-    import joblib
-
-    load_model = joblib.load("model_final.pkl")
+    load_model = joblib.load("./Data_Science_Salary/model_final.pkl")
     x_test = test_set.drop(["Salary in USD"], axis=1)
     y_true = test_set["Salary in USD"]
     y_pred = load_model.predict(x_test)
 
-    import pandas as pd
-
     predictions = pd.DataFrame(
         {"id": test_set.index, "Real Salary": y_true, "Predicted Salary": y_pred}
     )
-
-    from sklearn.metrics import mean_squared_error
-    from sklearn.metrics import r2_score
 
     print("\nTest Results with Meta Model: \n")
     rmse = mean_squared_error(
@@ -278,8 +280,6 @@ def model_test(test_set):
     print(f"r2 scroes = {r2:.2f}")
 
     # 畫圖
-    import plotly.graph_objects as go
-    import numpy as np
 
     slope, intercept = np.polyfit(
         predictions["Real Salary"], predictions["Predicted Salary"], 1
@@ -315,14 +315,12 @@ def model_test(test_set):
 if __name__ == "__main__":
     df = load_data()
     EDA(df)
-    cv_split, x, y, test_set = label_code(df)
+    cv_split, x, y, test_set = label(df)
     model(cv_split, x, y)
-
-    import optuna
 
     # HistGradientBoostingRegressor
     study = optuna.create_study(direction="minimize")
-    study.optimize(HistGradient, n_trials=100, show_progress_bar=True)
+    study.optimize(histGradient, n_trials=100, show_progress_bar=True)
     print(f"\nHistogram-based Gradient Boosting Regressor:\n")
     print("Number of finished trials: ", len(study.trials))
     print("Best trial:")
@@ -337,7 +335,7 @@ if __name__ == "__main__":
     print("=" * 50)
     # CatBoostRegressor
     study2 = optuna.create_study(direction="minimize")
-    study2.optimize(CatBoost, n_trials=100, show_progress_bar=True)
+    study2.optimize(catBoost, n_trials=100, show_progress_bar=True)
     print(f"\nCatBoost Regressor:\n")
     print("Number of finished trials: ", len(study2.trials))
     print("Best trial:")
@@ -348,5 +346,7 @@ if __name__ == "__main__":
         print(f"{key}: {value}")
 
     best_params_cat = study2.best_params
-    StackingRegressor(best_params_hist, best_params_cat)
+    print("=" * 50)
+    print("StackingRegressor")
+    stackingRegressor(best_params_hist, best_params_cat)
     model_test(test_set)

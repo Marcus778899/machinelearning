@@ -7,20 +7,20 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
 df = pd.read_csv("./titianic/test.csv", header=0)
+df_ans = pd.read_csv("./titianic/submission.csv", header=0)
 
 model = joblib.load("./titianic/titanic_model.pkl")
-df_ans = pd.read_csv("./titianic/submission.csv", header=0)
 df.drop(["Name", "Ticket", "Cabin"], inplace=True, axis=1)
 df.Age.fillna(df.Age.mode()[0], inplace=True)
 df.Fare.fillna(df.Fare.mode()[0], inplace=True)
 
-
-encoder = OneHotEncoder()
+label = joblib.load("./titianic/onehotEncoding.pkl")
 X = df[["Age", "Fare", "Pclass", "SibSp", "Parch"]]
-encode_data = encoder.fit_transform(df[["Sex", "Embarked"]])
+encode_data = df[["Sex", "Embarked"]]
+encode_data = label.transform(encode_data)
 encode_data = pd.DataFrame(
     encode_data.toarray(),
-    columns=encoder.get_feature_names_out(["Sex", "Embarked"]),
+    columns=label.get_feature_names_out(["Sex", "Embarked"]),
 )
 X = pd.concat([X, encode_data], axis=1)
 y = df_ans.Survived.values

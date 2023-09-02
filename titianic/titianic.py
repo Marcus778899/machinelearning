@@ -13,6 +13,16 @@ from sklearn.model_selection import train_test_split
 from xgboost import XGBClassifier
 from sklearn.model_selection import GridSearchCV
 import joblib
+import warnings
+
+warnings.filterwarnings("ignore")
+try:
+    from IPython import get_ipython
+
+    get_ipython().magic("clear")
+    get_ipython().magic("reset -f")
+except:
+    pass
 
 
 def load_data():
@@ -45,8 +55,7 @@ def EDA(df_train):
 
     # 票價與存活的關聯
     plt.rcParams["font.family"] = "SimSun"
-    ax = sns.kdeplot(
-        df_train.Fare[(df_train["Survived"] == 1)], color="Red", fill=True)
+    ax = sns.kdeplot(df_train.Fare[(df_train["Survived"] == 1)], color="Red", fill=True)
     ax = sns.kdeplot(
         df_train.Fare[(df_train["Survived"] == 0)], ax=ax, color="Blue", fill=True
     )
@@ -57,8 +66,7 @@ def EDA(df_train):
     plt.show()
 
     # 年紀與存活關聯
-    ax = sns.kdeplot(
-        df_train.Age[(df_train["Survived"] == 1)], color="Red", fill=True)
+    ax = sns.kdeplot(df_train.Age[(df_train["Survived"] == 1)], color="Red", fill=True)
     ax = sns.kdeplot(
         df_train.Age[(df_train["Survived"] == 0)], ax=ax, color="Blue", fill=True
     )
@@ -74,11 +82,13 @@ def processing(df_train):
 
     encoder = OneHotEncoder()
     X = df_train[["Age", "Fare", "Pclass", "SibSp", "Parch"]]
-    encode_data = encoder.fit_transform(df_train[["Sex", "Embarked"]])
+    encoder.fit(df_train[["Sex", "Embarked"]])
+    encode_data = encoder.transform(df_train[["Sex", "Embarked"]])
     encode_data = pd.DataFrame(
         encode_data.toarray(),
         columns=encoder.get_feature_names_out(["Sex", "Embarked"]),
     )
+    joblib.dump(encoder, "./titianic/onehotEncoding.pkl")
     X = pd.concat([X, encode_data], axis=1)
     y = df_train["Survived"]
     return X, y
